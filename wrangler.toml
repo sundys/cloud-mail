@@ -1,0 +1,5 @@
+name = "cloud-mail-webhook"
+main = "src/index.js"
+compatibility_date = "2026-09-07"
+
+# 将所有敏感配置通过 `wrangler secret put <名称>` 写入；不要写到本文件。

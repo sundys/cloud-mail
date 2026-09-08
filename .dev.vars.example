@@ -1,0 +1,13 @@
+# 本地开发时复制为 .dev.vars。生产环境请使用 `wrangler secret put`。
+WEBHOOK_TOKEN=replace-with-a-long-random-secret
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+# 企业微信“自建应用”，不是群机器人 Webhook。
+WECHAT_CORP_ID=
+WECHAT_APP_SECRET=
+WECHAT_AGENT_ID=
+# 填成员 UserID；多个成员以 | 分隔。测试全员可填 @all（须在应用可见范围内）。
+WECHAT_TO_USER=
+FEISHU_WEBHOOK_URL=
+DISCORD_WEBHOOK_URL=
+OTHER_WEBHOOK_URL=
