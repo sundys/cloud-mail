@@ -54,7 +54,7 @@ function normalizeEmail(value) {
   const email = Object.fromEntries(strings.map((key) => [key, string(value[key])]));
   // Cloud Mail 的 emailId 是数值；以此避免把任意 JSON 当作邮件通知。
   if (!email.emailId || !email.toEmail) return null;
-  email.preview = truncate(toPlainText(email.text || email.content), 3500);
+  email.preview = truncate(selectPreview(email.text, email.content), 3500);
   return email;
 }
 
@@ -155,8 +155,57 @@ function from(email) {
   return email.sendName ? `${email.sendName} <${email.sendEmail || 'unknown'}>` : (email.sendEmail || '（未提供）');
 }
 
-function toPlainText(html) {
-  return string(html).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/\s+/g, ' ').trim();
+function selectPreview(text, content) {
+  const textSource = string(text);
+  const textPreview = toPlainText(textSource);
+  const htmlPreview = toPlainText(content);
+
+  // multipart 邮件的 text/plain 有时只是 HTML 源码或客户端生成的英文回退提示；
+  // 这时优先使用同一封邮件已解析出的 HTML 正文。
+  if (htmlPreview && (!textPreview || looksLikeSource(textSource) || isHtmlFallback(textPreview))) {
+    return htmlPreview;
+  }
+  return textPreview || htmlPreview;
+}
+
+function looksLikeSource(value) {
+  const source = string(value);
+  return /<(?:!doctype|html|head|body|style|script|meta|table|div|span|p|a|img)\b/i.test(source)
+    || /^(?:mime-version|content-type|content-transfer-encoding):/im.test(source)
+    || /^--[\w-]{8,}/m.test(source);
+}
+
+function isHtmlFallback(value) {
+  return /(?:this is a multi-part message in mime format|this message (?:requires|contains).{0,100}html|to view (?:this )?(?:message|email).{0,100}html|if you can read this.{0,100}html)/i.test(value);
+}
+
+function toPlainText(value) {
+  return decodeHtmlEntities(string(value)
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<(?:head|style|script|noscript|template)\b[^>]*>[\s\S]*?<\/(?:head|style|script|noscript|template)\s*>/gi, ' ')
+    .replace(/<\/?(?:p|div|tr|li|h[1-6]|blockquote|pre)\b[^>]*>/gi, '\n')
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, ' '))
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]*\n[ \t]*/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function decodeHtmlEntities(value) {
+  const named = { amp: '&', apos: "'", gt: '>', lt: '<', nbsp: ' ', quot: '"' };
+  return value.replace(/&(?:#x([0-9a-f]+)|#(\d+)|([a-z]+));/gi, (entity, hex, decimal, name) => {
+    if (hex || decimal) {
+      const codePoint = Number.parseInt(hex || decimal, hex ? 16 : 10);
+      try {
+        return Number.isSafeInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : entity;
+      } catch {
+        return entity;
+      }
+    }
+    return named[name.toLowerCase()] ?? entity;
+  });
 }
 function splitUtf8(value, maxBytes) {
   const chunks = []; let current = ''; let bytes = 0;
