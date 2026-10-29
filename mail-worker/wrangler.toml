@@ -4,7 +4,7 @@ compatibility_date = "2025-06-04"
 keep_vars = true
 
 [observability]
-enabled = true
+enabled = false
 
 #[[d1_databases]]
 #binding = "db"			#d1数据库绑定名默认不可修改
