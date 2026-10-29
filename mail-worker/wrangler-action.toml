@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2025-06-04"
 
 [observability]
-enabled = true
+enabled = false
 
 [[routes]]
 pattern = "${CUSTOM_DOMAIN}"
